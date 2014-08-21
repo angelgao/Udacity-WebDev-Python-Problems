@@ -15,7 +15,9 @@
 # limitations under the License.
 #
 import webapp2
-import cgi
+import cgi #for character escaping
+import re #for regular expression
+
 form = """
 <form method="get" >
     <input type ="password" name="q">
@@ -154,8 +156,28 @@ class SignUpHandler(webapp2.RequestHandler):
         txtUsername = self.request.get("username")
         txtPassword = self.request.get("password")
         txtVerify = self.request.get("verify")
-        txtUsername = self.request.get("username")
-  
+        txtEmail = self.request.get("email")
+        USER_RE = "^[a-zA-Z0-9_-]{3,20}$"
+        PASS_RE = "^.{3,20}$"
+        EMAIL_RE = "^[\S]+@[\S]+\.[\S]+$"
+        if(not verifyWithRegex(txtUsername, USER_RE)):
+            self.response.out.write(inputForm % {"errorUsername":"That's not a valid username.", "errorPassword":"", "errorVerify":"","errorEmail":""})
+            return
+        if(not verifyWithRegex(txtPassword, PASS_RE)):
+            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"That wasn't a valid password.", "errorVerify":"","errorEmail":""})
+            return
+        if(txtPassword is not none and txtPassword != txtVerify):
+            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"Your passwords didn't match.","errorEmail":""})
+            return
+        if(not verifyWithRegex(txtEmail, EMAIL_RE)):
+            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"","errorEmail":"That's not a valid email."})
+            return   
+
+def verifyWithRegex(text, regexExpression):
+    CORRECT_RE = re.compile(regexExpression)
+    return CORRECT_RE.match(text)
+
+    
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/ROT13', EncodeHandler),
