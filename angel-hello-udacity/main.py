@@ -39,8 +39,7 @@ ROT13form = """
     </form>
   </body>
 
-</html>
-"""
+</html>"""
 
 inputForm = """
 <html>
@@ -62,7 +61,7 @@ inputForm = """
             Username
           </td>
           <td>
-            <input type="text" name="username" value="">
+            <input type="text" name="username" value=%(username)s>
           </td>
           <td class="error">
           %(errorUsername)s  
@@ -98,7 +97,7 @@ inputForm = """
             Email (optional)
           </td>
           <td>
-            <input type="text" name="email" value="">
+            <input type="text" name="email" value=%(email)s>
           </td>
           <td class="error">
           %(errorEmail)s 
@@ -149,9 +148,13 @@ class EncodeHandler(webapp2.RequestHandler):
         #escapedText = cgi.escape(encodedText, quote = True)
         self.response.out.write(ROT13form % {"newText":encodedText})
 
+class ThanksHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.out.write("")
+
 class SignUpHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"","errorEmail":""})
+        self.response.out.write(printForm())
     def post(self):
         txtUsername = self.request.get("username")
         txtPassword = self.request.get("password")
@@ -160,26 +163,53 @@ class SignUpHandler(webapp2.RequestHandler):
         USER_RE = "^[a-zA-Z0-9_-]{3,20}$"
         PASS_RE = "^.{3,20}$"
         EMAIL_RE = "^[\S]+@[\S]+\.[\S]+$"
+        dict = {'UsernameError': "",
+                'PasswordError':"",
+                'VerifyError':"",
+                'EmailError':"",
+                'Username':txtUsername,
+                'Email':txtEmail}
+        validated = None
         if(not verifyWithRegex(txtUsername, USER_RE)):
-            self.response.out.write(inputForm % {"errorUsername":"That's not a valid username.", "errorPassword":"", "errorVerify":"","errorEmail":""})
-            return
+            #self.response.out.write(inputForm % {"errorUsername":"That's not a valid username.", "errorPassword":"", "errorVerify":"","errorEmail":""})
+            #self.response.out.write(printForm(UsernameError="That's not a valid username.", username=txtUsername, email=txtEmail))
+            dict['UsernameError'] = "That's not a valid username."
+            validated = True
+            
         if(not verifyWithRegex(txtPassword, PASS_RE)):
-            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"That wasn't a valid password.", "errorVerify":"","errorEmail":""})
-            return
-        if(txtPassword is not none and txtPassword != txtVerify):
-            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"Your passwords didn't match.","errorEmail":""})
-            return
+            #self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"That wasn't a valid password.", "errorVerify":"","errorEmail":""})
+            #self.response.out.write(printForm(PasswordError="That wasn't a valid password.", username=txtUsername, email=txtEmail))
+            dict['PasswordError'] = "That wasn't a valid password."
+            validated = True
+        if(txtPassword is not None and txtPassword != txtVerify):
+            #self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"Your passwords didn't match.","errorEmail":""})
+            #self.response.out.write(printForm(VerifyError="Your passwords didn't match.", username=txtUsername, email=txtEmail))
+            dict['VerifyError'] = "Your passwords didn't match."
+            validated = True
         if(not verifyWithRegex(txtEmail, EMAIL_RE)):
-            self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"","errorEmail":"That's not a valid email."})
-            return   
+            #self.response.out.write(inputForm % {"errorUsername":"", "errorPassword":"", "errorVerify":"","errorEmail":"That's not a valid email."})
+            #self.response.out.write(printForm(EmailError="That's not a valid email.", username=txtUsername, email=txtEmail))
+            dict['EmailError'] = "That's not a valid email."
+            validated = True
+        
+        if (validated == None):
+            self.redirect("/thanks")
+        else:
+            self.response.out.write(printForm(**dict))
+            #self.response.out.write(printForm(UsernameError=usernameError, PasswordError =passwordError, VerifyError = verifyError, EmailError = emailError))
 
 def verifyWithRegex(text, regexExpression):
     CORRECT_RE = re.compile(regexExpression)
     return CORRECT_RE.match(text)
 
+def printForm(UsernameError = "", PasswordError ="", VerifyError = "", EmailError ="", Username ="", Email=""):
+    newform = inputForm % {"errorUsername":UsernameError, "errorPassword":PasswordError, "errorVerify":VerifyError,"errorEmail":EmailError, "username":Username, "email":Email}
+    return newform
+
     
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/ROT13', EncodeHandler),
-    ('/SignUp', SignUpHandler)
+    ('/SignUp', SignUpHandler),
+    ('/thanks', ThanksHandler)
 ], debug=True)
